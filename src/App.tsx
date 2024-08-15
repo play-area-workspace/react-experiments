@@ -1,18 +1,11 @@
-import {useState} from 'react'
+import PostList from "./components/PostList.tsx";
 
-const baseUrl: string = import.meta.env.BASE_URL;
-
-interface Post{
-    id: number;
-    name: string;
-}
 
 function App() {
-    const [posts, setPosts] = useState<Post[]>([])
 
     return (
         <>
-
+            <PostList/>
         </>
     )
 }
