@@ -1,4 +1,8 @@
-import {useEffect, useRef, useState} from 'react'
+"use client";
+
+import {useState} from 'react'
+import {useQuery} from "@tanstack/react-query";
+
 
 const baseUrl: string = import.meta.env.VITE_BASE_URL;
 
@@ -7,56 +11,36 @@ interface Post {
     title: string;
 }
 
+
 function PostList() {
-    const [posts, setPosts] = useState<Post[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState()
     const [page, setPage] = useState(0)
 
-    const abortControllerRef = useRef<AbortController | null>(null);
+    const {
+        data: posts,
+        isError,
+        isPending,
+        error
+    } = useQuery({
+        queryKey: ["posts", {page}],
+        queryFn: async () => {
+            const response = await fetch(`${baseUrl}/posts?page=${page}`);
+            return (await response.json()) as Post[];
+        },
+    });
 
-    useEffect(() => {
-        const fetchPosts = async () => {
-
-            abortControllerRef.current?.abort();
-            abortControllerRef.current = new AbortController();
-
-            setIsLoading(true);
-            try {
-                const response = await fetch(`${baseUrl}/posts?page=${page}`, {
-                    signal: abortControllerRef.current?.signal,
-                });
-                const posts = await response.json() as Post[];
-                setPosts(posts);
-            } catch (e) {
-                if (e.name==="AbortError"){
-                    console.log("Aborted!");
-                    return;
-                }
-                setError(e);
-            } finally {
-                setIsLoading(false);
-            }
-
-        };
-        fetchPosts();
-    }, [page]);
-
-
-    if (error) {
-        console.log(error);
-        return <div>Something went wrong please try again!</div>
+    if (isError) {
+        return (<span>Error occurred: ${error}</span>);
     }
 
     return (
         <div className='tutorial'>
             <h1>Data Fetching in React</h1>
             <button onClick={() => setPage(page + 1)}>Increment page {page}</button>
-            {isLoading && <div>Loading...</div>}
-            {!isLoading &&
+            {isPending && <div>Loading...</div>}
+            {!isPending &&
                 <ul>
                     {
-                        posts.map((post) => {
+                        posts?.map((post) => {
                             return <li key={post.id}>{post.title}</li>
                         })
                     }
@@ -67,4 +51,4 @@ function PostList() {
     );
 }
 
-export default PostList
+export default PostList;
